@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Battle For The Mars - Mint NFT</title>
+</head>
+<body style="font-family: sans-serif; background-color: #0d0d0d; color: white; text-align: center; padding: 50px;">
+  <h1>🚀 Battle For The Mars</h1>
+  <p>Mint your NFT and join the journey to Mars!</p>
+  <button id="connectButton">Connect Wallet</button>
+  <button id="mintButton" style="display: none;">Mint NFT</button>
+  <p id="status"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script>
+    const contractAddress = "0x7A0A33aaC3c694DE96b12A5F48E18692C83e1f07"; // Your deployed address
+    const abi = [ 
+      {
+        "inputs": [
+          { "internalType": "address", "name": "to", "type": "address" }
+        ],
+        "name": "safeMint",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ];
+
+    let provider;
+    let signer;
+    let contract;
+
+    document.getElementById("connectButton").onclick = async () => {
+      if (typeof window.ethereum !== "undefined") {
+        try {
+          await ethereum.request({ method: "eth_requestAccounts" });
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          signer = provider.getSigner();
+          contract = new ethers.Contract(contractAddress, abi, signer);
+          document.getElementById("status").innerText = "Wallet connected ✅";
+          document.getElementById("mintButton").style.display = "inline-block";
+        } catch (error) {
+          console.error(error);
+          document.getElementById("status").innerText = "Connection failed ❌";
+        }
+      } else {
+        alert("MetaMask extension not found. Please install MetaMask!");
+      }
+    };
+
+    document.getElementById("mintButton").onclick = async () => {
+      try {
+        const userAddress = await signer.getAddress();
+        const tx = await contract.safeMint(userAddress);
+        document.getElementById("status").innerText = "Minting... please wait ⏳";
+        await tx.wait();
+        document.getElementById("status").innerText = "NFT Minted Successfully ✅";
+      } catch (err) {
+        console.error(err);
+        document.getElementById("status").innerText = "Minting failed ❌";
+      }
+    };
+  </script>
+</body>
+</html>
