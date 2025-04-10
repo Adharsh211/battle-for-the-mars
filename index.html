@@ -5,26 +5,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Battle For The Mars - Mint NFT</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #0d0d0d;
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(to right, #0f0f0f, #1a1a1a);
       color: white;
       text-align: center;
-      padding: 50px;
+      padding: 40px;
+      overflow-x: hidden;
+      background-image: url('https://ipfs.io/ipfs/YOUR_MARS_BG_IMAGE'); /* Optional Mars background */
+      background-size: cover;
+      background-repeat: no-repeat;
     }
+
+    h1 {
+      font-size: 3rem;
+      color: #ff004c;
+      text-shadow: 0 0 10px #ff004c;
+    }
+
+    #mintButton, #connectButton {
+      font-size: 18px;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 8px;
+      margin: 10px;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(90deg, #ff004c, #ff7f50);
+      box-shadow: 0 0 12px #ff004c;
+      transition: all 0.3s ease;
+    }
+
+    #mintButton:hover, #connectButton:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px #ff004c;
+    }
+
+    #spinner {
+      font-size: 22px;
+      margin-top: 10px;
+      color: #ffd700;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-size: 18px;
+    }
+
     #previewVideo {
       width: 300px;
       border-radius: 12px;
       margin-top: 20px;
       display: none;
     }
-    #mintButton:disabled {
-      background-color: #666;
-      cursor: not-allowed;
-    }
-    #spinner {
-      display: none;
-      font-size: 22px;
+
+    .counter {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #00ffcc;
     }
   </style>
 </head>
@@ -35,20 +75,25 @@
   <button id="connectButton">Connect Wallet</button><br><br>
 
   <div id="mintSection" style="display: none;">
+    <div class="counter">Total Minted: <span id="totalMinted">...</span></div>
     <h2>🎮 Mint Your NFT</h2>
     <label for="mintAmount">Select Quantity:</label>
     <input type="number" id="mintAmount" min="1" max="15" value="1" />
     <br><br>
     <button id="mintButton">Mint NFT</button>
     <p id="spinner">⏳ Minting in progress...</p>
-    <video id="previewVideo" autoplay loop muted src="https://ipfs.io/ipfs/bafkreifa5rbmjrhywgzydld5bsqipm2we7xjkwxyfmvlbelvcqjqxjoney"></video>
+    <video id="previewVideo" autoplay loop muted src="https://ipfs.io/ipfs/bafybeid2t43yvpi2l2zu5kmjiinj5zkrllyfyr5hqaldboemtvp5ghzn5i"></video>
   </div>
 
   <p id="status"></p>
 
+  <a href="https://discord.gg/WtcncXNQ" target="_blank" style="color: #7289da; text-decoration: none; font-size: 18px;">Join our Discord 👾</a>
+
+  <audio id="mintSound" src="https://ipfs.io/ipfs/bafkreia6zf4neh452rfzseum2y3mt6sjefaxaf5b67mvg22mmlaa57fx2y"></audio>
+
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
-    const contractAddress = "0x7A0A33aaC3c694DE96b12A5F48E18692C83e1f07"; // Contract Address
+    const contractAddress = "0x7A0A33aaC3c694DE96b12A5F48E18692C83e1f07";
     const abi = [
       {
         "inputs": [{ "internalType": "address", "name": "to", "type": "address" }],
@@ -56,10 +101,22 @@
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "nextTokenId",
+        "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ],
+        "stateMutability": "view",
+        "type": "function"
       }
     ];
 
     let provider, signer, contract;
+
+    async function fetchTotalMinted() {
+      const minted = await contract.nextTokenId();
+      document.getElementById("totalMinted").innerText = minted.toString();
+    }
 
     document.getElementById("connectButton").onclick = async () => {
       if (typeof window.ethereum !== "undefined") {
@@ -71,8 +128,8 @@
           document.getElementById("status").innerText = "✅ Wallet connected";
           document.getElementById("mintSection").style.display = "block";
           document.getElementById("previewVideo").style.display = "block";
+          fetchTotalMinted();
         } catch (err) {
-          console.error(err);
           document.getElementById("status").innerText = "❌ Connection failed";
         }
       } else {
@@ -102,12 +159,13 @@
           const tx = await contract.safeMint(userAddress);
           await tx.wait();
           document.getElementById("status").innerText = `✅ Minted ${i + 1} of ${amount}`;
+          document.getElementById("mintSound").play();
           await delay(2000);
         }
 
         document.getElementById("status").innerText = `🎉 All ${amount} NFTs Minted Successfully!`;
+        fetchTotalMinted();
       } catch (err) {
-        console.error(err);
         document.getElementById("status").innerText = "❌ Minting failed";
       } finally {
         document.getElementById("mintButton").disabled = false;
