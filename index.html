@@ -4,22 +4,54 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Battle For The Mars - Mint NFT</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0d0d0d;
+      color: white;
+      text-align: center;
+      padding: 50px;
+    }
+    #previewVideo {
+      width: 300px;
+      border-radius: 12px;
+      margin-top: 20px;
+      display: none;
+    }
+    #mintButton:disabled {
+      background-color: #666;
+      cursor: not-allowed;
+    }
+    #spinner {
+      display: none;
+      font-size: 22px;
+    }
+  </style>
 </head>
-<body style="font-family: sans-serif; background-color: #0d0d0d; color: white; text-align: center; padding: 50px;">
+<body>
   <h1>🚀 Battle For The Mars</h1>
   <p>Mint your NFT and join the journey to Mars!</p>
-  <button id="connectButton">Connect Wallet</button>
-  <button id="mintButton" style="display: none;">Mint NFT</button>
+
+  <button id="connectButton">Connect Wallet</button><br><br>
+
+  <div id="mintSection" style="display: none;">
+    <h2>🎮 Mint Your NFT</h2>
+    <label for="mintAmount">Select Quantity:</label>
+    <input type="number" id="mintAmount" min="1" max="15" value="1" />
+    <br><br>
+    <button id="mintButton">Mint NFT</button>
+    <p id="spinner">⏳ Minting in progress...</p>
+    <video id="previewVideo" autoplay loop muted src="https://ipfs.io/ipfs/bafkreifa5rbmjrhywgzydld5bsqipm2we7xjkwxyfmvlbelvcqjqxjoney"></video>
+  </div>
+
   <p id="status"></p>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
-    const contractAddress = "0x7A0A33aaC3c694DE96b12A5F48E18692C83e1f07"; // Your deployed address
-    const abi = [ 
+    const contractAddress = "0x7A0A33aaC3c694DE96b12A5F48E18692C83e1f07"; // Contract Address
+    const abi = [
       {
-        "inputs": [
-          { "internalType": "address", "name": "to", "type": "address" }
-        ],
+        "inputs": [{ "internalType": "address", "name": "to", "type": "address" }],
         "name": "safeMint",
         "outputs": [],
         "stateMutability": "nonpayable",
@@ -27,9 +59,7 @@
       }
     ];
 
-    let provider;
-    let signer;
-    let contract;
+    let provider, signer, contract;
 
     document.getElementById("connectButton").onclick = async () => {
       if (typeof window.ethereum !== "undefined") {
@@ -38,27 +68,50 @@
           provider = new ethers.providers.Web3Provider(window.ethereum);
           signer = provider.getSigner();
           contract = new ethers.Contract(contractAddress, abi, signer);
-          document.getElementById("status").innerText = "Wallet connected ✅";
-          document.getElementById("mintButton").style.display = "inline-block";
-        } catch (error) {
-          console.error(error);
-          document.getElementById("status").innerText = "Connection failed ❌";
+          document.getElementById("status").innerText = "✅ Wallet connected";
+          document.getElementById("mintSection").style.display = "block";
+          document.getElementById("previewVideo").style.display = "block";
+        } catch (err) {
+          console.error(err);
+          document.getElementById("status").innerText = "❌ Connection failed";
         }
       } else {
-        alert("MetaMask extension not found. Please install MetaMask!");
+        alert("Install MetaMask Extension First");
       }
     };
 
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     document.getElementById("mintButton").onclick = async () => {
+      const amount = parseInt(document.getElementById("mintAmount").value);
+      if (!signer || !contract) {
+        document.getElementById("status").innerText = "❌ Connect your wallet first";
+        return;
+      }
+
       try {
+        document.getElementById("mintButton").disabled = true;
+        document.getElementById("spinner").style.display = "block";
+        document.getElementById("status").innerText = "";
+
         const userAddress = await signer.getAddress();
-        const tx = await contract.safeMint(userAddress);
-        document.getElementById("status").innerText = "Minting... please wait ⏳";
-        await tx.wait();
-        document.getElementById("status").innerText = "NFT Minted Successfully ✅";
+
+        for (let i = 0; i < amount; i++) {
+          const tx = await contract.safeMint(userAddress);
+          await tx.wait();
+          document.getElementById("status").innerText = `✅ Minted ${i + 1} of ${amount}`;
+          await delay(2000);
+        }
+
+        document.getElementById("status").innerText = `🎉 All ${amount} NFTs Minted Successfully!`;
       } catch (err) {
         console.error(err);
-        document.getElementById("status").innerText = "Minting failed ❌";
+        document.getElementById("status").innerText = "❌ Minting failed";
+      } finally {
+        document.getElementById("mintButton").disabled = false;
+        document.getElementById("spinner").style.display = "none";
       }
     };
   </script>
